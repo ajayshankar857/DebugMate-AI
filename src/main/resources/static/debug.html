@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Debugger - DebugMate AI</title>
+  <meta name="description" content="AI-powered code debugging with root cause analysis, corrected code, and senior engineer mentoring.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .editor-container { height: 360px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+    .diff-container   { height: 300px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+
+    .confidence-ring { position: relative; width: 90px; height: 90px; }
+    .confidence-ring svg { transform: rotate(-90deg); }
+    .confidence-ring .value {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 1.1rem; font-weight: 800; color: var(--primary);
+    }
+
+    .quality-bar { height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden; }
+    .quality-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+    .error-card {
+      background: rgba(5,6,8,0.5); border: 1px solid var(--border-color);
+      border-radius: 10px; padding: 16px; margin-bottom: 12px;
+      border-left: 4px solid;
+    }
+    .error-card.CRITICAL { border-left-color: #ef4444; }
+    .error-card.HIGH     { border-left-color: #f59e0b; }
+    .error-card.MEDIUM   { border-left-color: #06b6d4; }
+    .error-card.LOW      { border-left-color: #10b981; }
+
+    .analysis-panel { display: none; }
+    .analysis-panel.visible { display: block; }
+
+    .lang-tab { cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 500;
+                color: var(--text-secondary); transition: var(--transition); user-select: none; }
+    .lang-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .lang-tab.active { background: rgba(79,172,254,0.15); color: var(--primary); }
+
+    .mode-btn { border-radius: 20px; font-size: 0.8rem; padding: 4px 14px; }
+    .mode-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    .spin { animation: spin 1.5s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .section-header i { font-size: 1.2rem; }
+
+    .concept-chip {
+      display: inline-block; background: rgba(79,172,254,0.1); color: var(--primary);
+      border: 1px solid rgba(79,172,254,0.25); border-radius: 20px;
+      padding: 4px 12px; font-size: 0.8rem; margin: 4px;
+    }
+    .practice-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .practice-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link active"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="debug.html?type=STACKTRACE" class="sidebar-link"><i class="bi bi-terminal-split"></i> Stack Trace</a></li>
+      <li><a href="debug.html?type=SQL" class="sidebar-link"><i class="bi bi-database-fill-gear"></i> SQL Debugger</a></li>
+      <li><a href="debug.html?type=EXPLAIN" class="sidebar-link"><i class="bi bi-chat-square-text-fill"></i> Explain Code</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">User</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="text-gradient fw-bold mb-1" id="pageTitle">AI Code Debugger</h1>
+        <p class="text-secondary mb-0" id="pageSubtitle">Paste your code and let your senior AI mentor analyze it instantly.</p>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <!-- Learning Mode selector -->
+        <div class="glass-panel px-3 py-2 d-flex gap-2 align-items-center">
+          <small class="text-muted me-1">Mode:</small>
+          <button class="btn btn-sm btn-outline-secondary mode-btn active" id="modeBeginner" onclick="setMode('BEGINNER')">Beginner</button>
+          <button class="btn btn-sm btn-outline-secondary mode-btn" id="modeIntermediate" onclick="setMode('INTERMEDIATE')">Expert</button>
+        </div>
+        <button class="btn btn-outline-glass" id="voiceBtn" onclick="toggleVoice()" title="Toggle Voice Explanation">
+          <i class="bi bi-volume-up-fill"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Language Tabs -->
+    <div class="d-flex gap-1 mb-3 flex-wrap" id="langTabs">
+      <span class="lang-tab active" onclick="setLang('Java')" id="tab-Java"><i class="bi bi-cup-hot-fill me-1 text-danger"></i>Java</span>
+      <span class="lang-tab" onclick="setLang('Python')" id="tab-Python"><i class="bi bi-filetype-py me-1 text-warning"></i>Python</span>
+      <span class="lang-tab" onclick="setLang('JavaScript')" id="tab-JavaScript"><i class="bi bi-filetype-js me-1 text-warning"></i>JavaScript</span>
+      <span class="lang-tab" onclick="setLang('SQL')" id="tab-SQL"><i class="bi bi-database me-1 text-info"></i>SQL</span>
+      <span class="lang-tab" onclick="setLang('C++')" id="tab-C++"><i class="bi bi-braces me-1 text-primary"></i>C++</span>
+      <span class="lang-tab" onclick="setLang('Spring Boot')" id="tab-Spring Boot"><i class="bi bi-box me-1 text-success"></i>Spring Boot</span>
+    </div>
+
+    <div class="row g-4">
+      <!-- LEFT: Monaco Editor -->
+      <div class="col-lg-6">
+        <div class="glass-panel p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-secondary fw-semibold d-flex align-items-center gap-2">
+              <i class="bi bi-code-slash"></i> Your Code
+            </span>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" onclick="clearEditor()" title="Clear">
+                <i class="bi bi-trash3"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadSample()" title="Load Sample">
+                <i class="bi bi-file-earmark-code"></i> Sample
+              </button>
+            </div>
+          </div>
+          <div id="editorContainer" class="editor-container"></div>
+
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-glow-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                    id="analyzeBtn" onclick="analyzeCode()">
+              <span class="spinner-border spinner-border-sm d-none" id="analyzeSpinner"></span>
+              <i class="bi bi-lightning-charge-fill" id="analyzeBtnIcon"></i>
+              <span id="analyzeBtnText">Analyze with AI</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results Panel -->
+      <div class="col-lg-6">
+
+        <!-- Placeholder (before analysis) -->
+        <div id="resultsPlaceholder" class="glass-panel p-5 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+          <div class="display-3 text-gradient-cyan-purple mb-3">
+            <i class="bi bi-robot"></i>
+          </div>
+          <h4 class="fw-bold text-gradient mb-2">Your AI Mentor is Ready</h4>
+          <p class="text-secondary mb-0">Paste your code on the left and click "Analyze with AI" to get<br>root cause analysis, corrected code, and senior mentoring.</p>
+        </div>
+
+        <!-- Results (after analysis) -->
+        <div id="resultsPanel" class="analysis-panel">
+          <!-- Score Cards Row -->
+          <div class="row g-3 mb-3">
+            <div class="col-4">
+              <div class="glass-panel p-3 text-center">
+                <div class="confidence-ring mx-auto mb-2">
+                  <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border-color)" stroke-width="8"/>
+                    <circle id="confidenceArc" cx="45" cy="45" r="38" fill="none"
+                            stroke="var(--primary)" stroke-width="8"
+                            stroke-dasharray="239" stroke-dashoffset="239"
+                            stroke-linecap="round" style="transition: stroke-dashoffset 1s ease;"/>
+                  </svg>
+                  <div class="value" id="confidenceVal">0%</div>
+                </div>
+                <div class="small text-secondary">Confidence</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="glass-panel p-3 text-center d-flex flex-column justify-content-center h-100">
+                <div class="fs-3 mb-1" id="severityIcon">⚠️</div>
+                <div class="fw-bold mb-1" id="severityBadgeVal">—</div>
+                <div class="small text-secondary">Severity</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="glass-panel p-3 d-flex flex-column justify-content-center h-100">
+                <div class="small text-secondary mb-2">Code Quality</div>
+                <div class="fw-bold text-gradient mb-2" id="qualityScore">—</div>
+                <div class="quality-bar">
+                  <div class="quality-bar-fill" id="qualityBarFill"
+                       style="width: 0%; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detected Errors -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-bug-fill text-danger"></i>
+              <h6 class="mb-0 fw-bold">Detected Errors</h6>
+              <span class="badge badge-custom badge-critical ms-auto" id="errorCount">0</span>
+            </div>
+            <div id="errorsContainer"></div>
+          </div>
+
+          <!-- Root Cause -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-search text-warning"></i>
+              <h6 class="mb-0 fw-bold">Root Cause Analysis</h6>
+            </div>
+            <p class="text-secondary mb-0" id="rootCauseText" style="line-height: 1.7;"></p>
+          </div>
+
+          <!-- Explanation -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-lightbulb-fill text-primary"></i>
+              <h6 class="mb-0 fw-bold">Mentor Explanation</h6>
+              <button class="btn btn-link btn-sm text-primary ms-auto p-0" onclick="speakExplanation()" id="speakBtn">
+                <i class="bi bi-volume-up"></i>
+              </button>
+            </div>
+            <p class="text-secondary mb-0" id="explanationText" style="line-height: 1.8;"></p>
+          </div>
+
+          <!-- Code Diff -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-file-diff-fill text-success"></i>
+              <h6 class="mb-0 fw-bold">Code Evolution (Diff View)</h6>
+              <button class="btn btn-sm btn-outline-glass ms-auto" onclick="copyCorrectedCode()">
+                <i class="bi bi-clipboard"></i> Copy Fixed Code
+              </button>
+            </div>
+            <div id="diffContainer" class="diff-container"></div>
+          </div>
+
+          <!-- Best Practices -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-award-fill text-warning"></i>
+              <h6 class="mb-0 fw-bold">Best Practices</h6>
+            </div>
+            <div id="practicesContainer"></div>
+          </div>
+
+          <!-- Related Concepts -->
+          <div class="glass-panel p-4 mb-3">
+            <div class="section-header">
+              <i class="bi bi-tags-fill text-info"></i>
+              <h6 class="mb-0 fw-bold">Related Concepts</h6>
+            </div>
+            <div id="conceptsContainer"></div>
+          </div>
+
+          <!-- Interview Question -->
+          <div class="glass-panel p-4 mb-3" style="border-left: 4px solid var(--accent);">
+            <div class="section-header">
+              <i class="bi bi-mortarboard-fill" style="color: var(--accent);"></i>
+              <h6 class="mb-0 fw-bold">Interview Question</h6>
+            </div>
+            <p class="text-secondary mb-0" id="interviewQText" style="line-height: 1.7;"></p>
+          </div>
+
+          <!-- Learning Tip -->
+          <div class="glass-panel p-4 mb-3" style="border-left: 4px solid var(--success);">
+            <div class="section-header">
+              <i class="bi bi-star-fill text-success"></i>
+              <h6 class="mb-0 fw-bold">Mentor Tip</h6>
+            </div>
+            <p class="text-secondary mb-0" id="learningTipText" style="line-height: 1.7;"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Monaco Editor CDN -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+// ── State ───────────────────────────────────────────────────────────────────
+let monacoEditor = null;
+let monacoDiffEditor = null;
+let selectedLang = 'Java';
+let selectedMode = 'BEGINNER';
+let voiceEnabled = false;
+let currentResponse = null;
+
+// Map tab lang names → Monaco language identifiers
+const langMap = {
+  'Java': 'java', 'Python': 'python', 'JavaScript': 'javascript',
+  'SQL': 'sql', 'C++': 'cpp', 'Spring Boot': 'java'
+};
+
+// Detect session type from URL param
+const urlType = new URLSearchParams(window.location.search).get('type');
+
+// ── Init Monaco ──────────────────────────────────────────────────────────────
+require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+
+  const darkTheme = {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#05060880',
+      'editor.lineHighlightBackground': '#0b0c1080',
+    }
+  };
+  monaco.editor.defineTheme('debugmateDark', darkTheme);
+
+  monacoEditor = monaco.editor.create(document.getElementById('editorContainer'), {
+    value: getSampleCode(selectedLang, urlType),
+    language: langMap[selectedLang],
+    theme: 'debugmateDark',
+    fontSize: 14,
+    fontFamily: "'JetBrains Mono', monospace",
+    lineNumbers: 'on',
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    padding: { top: 12 }
+  });
+
+  // Init diff editor (hidden until results arrive)
+  monacoDiffEditor = monaco.editor.createDiffEditor(document.getElementById('diffContainer'), {
+    theme: 'debugmateDark',
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono', monospace",
+    readOnly: true,
+    minimap: { enabled: false },
+    automaticLayout: true,
+    renderSideBySide: true
+  });
+
+  // Adjust page UI for session type
+  if (urlType === 'STACKTRACE') {
+    document.getElementById('pageTitle').innerText = 'Stack Trace Analyzer';
+    document.getElementById('pageSubtitle').innerText = 'Paste a Java exception stack trace to get root cause analysis and fixes.';
+    monacoEditor.setValue(SAMPLE_STACKTRACE);
+    monacoEditor.updateOptions({ language: 'java' });
+  } else if (urlType === 'SQL') {
+    document.getElementById('pageTitle').innerText = 'SQL Query Debugger';
+    document.getElementById('pageSubtitle').innerText = 'Paste a SQL query or schema to detect errors and get optimized alternatives.';
+    setLang('SQL');
+    monacoEditor.setValue(SAMPLE_SQL);
+  } else if (urlType === 'EXPLAIN') {
+    document.getElementById('pageTitle').innerText = 'Code Explainer';
+    document.getElementById('pageSubtitle').innerText = 'Paste any code to get a line-by-line mentor explanation with complexity analysis.';
+  }
+
+  loadNav();
+});
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+async function loadNav() {
+  try {
+    const p = await Auth.apiCall('/api/users/profile');
+    document.getElementById('navUsername').innerText = p.username;
+    document.getElementById('navXp').innerText = p.xpPoints + ' XP';
+    document.getElementById('navAvatar').innerText = p.username.charAt(0).toUpperCase();
+  } catch(e) {}
+}
+
+// ── Language Tabs ────────────────────────────────────────────────────────────
+function setLang(lang) {
+  selectedLang = lang;
+  document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  const tab = document.getElementById('tab-' + lang);
+  if (tab) tab.classList.add('active');
+  if (monacoEditor) {
+    monaco.editor.setModelLanguage(monacoEditor.getModel(), langMap[lang] || 'plaintext');
+  }
+}
+
+// ── Learning Mode ────────────────────────────────────────────────────────────
+function setMode(m) {
+  selectedMode = m;
+  document.getElementById('modeBeginner').classList.toggle('active', m === 'BEGINNER');
+  document.getElementById('modeIntermediate').classList.toggle('active', m === 'INTERMEDIATE');
+}
+
+// ── Voice Toggle ─────────────────────────────────────────────────────────────
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  document.getElementById('voiceBtn').innerHTML = voiceEnabled
+    ? '<i class="bi bi-volume-mute-fill"></i>'
+    : '<i class="bi bi-volume-up-fill"></i>';
+  Auth.showToast(voiceEnabled ? 'Voice explanations enabled 🔊' : 'Voice explanations disabled', 'info');
+}
+
+function speakExplanation() {
+  if (!currentResponse) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(currentResponse.explanation);
+  utter.rate = 0.95; utter.pitch = 1;
+  window.speechSynthesis.speak(utter);
+}
+
+// ── Analyze Code ─────────────────────────────────────────────────────────────
+async function analyzeCode() {
+  const code = monacoEditor.getValue().trim();
+  if (!code) { Auth.showToast('Please paste some code first!', 'error'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  const spinner = document.getElementById('analyzeSpinner');
+  const btnIcon = document.getElementById('analyzeBtnIcon');
+  const btnText = document.getElementById('analyzeBtnText');
+
+  btn.disabled = true;
+  spinner.classList.remove('d-none');
+  btnIcon.classList.add('d-none');
+  btnText.innerText = 'Analyzing...';
+
+  const sessionType = urlType || 'DEBUG';
+
+  try {
+    const response = await Auth.apiCall('/api/debug/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ code, language: selectedLang, learningMode: selectedMode, sessionType })
+    });
+
+    currentResponse = response;
+    renderResults(response, code);
+
+    if (voiceEnabled && response.explanation) speakExplanation();
+    Auth.showToast('Analysis complete! +' + (10 + (response.detectedErrors?.length || 0) * 5) + ' XP earned 🎯', 'success');
+
+  } catch(e) {
+    Auth.showToast('Analysis failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    spinner.classList.add('d-none');
+    btnIcon.classList.remove('d-none');
+    btnText.innerText = 'Analyze with AI';
+  }
+}
+
+// ── Render Results ────────────────────────────────────────────────────────────
+function renderResults(r, originalCode) {
+  document.getElementById('resultsPlaceholder').style.display = 'none';
+  document.getElementById('resultsPanel').classList.add('visible');
+
+  // Confidence Ring
+  const conf = r.confidenceScore || 0;
+  document.getElementById('confidenceVal').innerText = conf + '%';
+  const circumference = 2 * Math.PI * 38;
+  const offset = circumference - (conf / 100) * circumference;
+  document.getElementById('confidenceArc').style.strokeDasharray = circumference;
+  setTimeout(() => { document.getElementById('confidenceArc').style.strokeDashoffset = offset; }, 100);
+
+  // Severity
+  const sevMap = { CRITICAL:'🔴', HIGH:'🟠', MEDIUM:'🔵', LOW:'🟢', SUGGESTION:'💡' };
+  document.getElementById('severityIcon').innerText = sevMap[r.severity] || '⚠️';
+  document.getElementById('severityBadgeVal').innerHTML =
+    `<span class="badge-custom badge-${r.severity?.toLowerCase() || 'medium'}">${r.severity || '—'}</span>`;
+
+  // Code Quality
+  const qual = r.codeQualityScore || '0/100';
+  document.getElementById('qualityScore').innerText = qual;
+  const pct = parseInt(qual.split('/')[0]) || 0;
+  setTimeout(() => { document.getElementById('qualityBarFill').style.width = pct + '%'; }, 200);
+
+  // Errors
+  document.getElementById('errorCount').innerText = (r.detectedErrors?.length || 0) + ' found';
+  const errHtml = (r.detectedErrors || []).map(e => `
+    <div class="error-card ${e.severity}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="fw-semibold">${e.type}</span>
+        <div class="d-flex gap-2">
+          ${e.lineNumber ? `<span class="small text-muted">Line ${e.lineNumber}</span>` : ''}
+          <span class="badge-custom badge-${e.severity?.toLowerCase()}">${e.severity}</span>
+        </div>
+      </div>
+      <p class="text-secondary small mb-2">${e.description}</p>
+      <div class="small" style="color: var(--success);"><i class="bi bi-check-circle me-1"></i>${e.fix}</div>
+    </div>`).join('') || '<p class="text-secondary small">No errors detected ✅</p>';
+  document.getElementById('errorsContainer').innerHTML = errHtml;
+
+  // Text sections
+  document.getElementById('rootCauseText').innerText = r.rootCause || '—';
+  document.getElementById('explanationText').innerText = r.explanation || '—';
+  document.getElementById('interviewQText').innerText = r.interviewQuestion || '—';
+  document.getElementById('learningTipText').innerText = r.learningTip || '—';
+
+  // Best Practices
+  const pracHtml = (r.bestPractices || []).map((p, i) => `
+    <div class="practice-item">
+      <span class="text-primary fw-bold">${i + 1}.</span>
+      <span class="text-secondary small">${p}</span>
+    </div>`).join('');
+  document.getElementById('practicesContainer').innerHTML = pracHtml;
+
+  // Related Concepts chips
+  const chipsHtml = (r.relatedConcepts || []).map(c => `<span class="concept-chip">${c}</span>`).join('');
+  document.getElementById('conceptsContainer').innerHTML = chipsHtml;
+
+  // Monaco Diff Editor
+  const originalModel = monaco.editor.createModel(originalCode, langMap[selectedLang] || 'plaintext');
+  const modifiedModel = monaco.editor.createModel(r.correctedCode || originalCode, langMap[selectedLang] || 'plaintext');
+  monacoDiffEditor.setModel({ original: originalModel, modified: modifiedModel });
+
+  // Scroll to results
+  document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Utility Functions ─────────────────────────────────────────────────────────
+function clearEditor() {
+  if (monacoEditor) monacoEditor.setValue('');
+  document.getElementById('resultsPlaceholder').style.display = '';
+  document.getElementById('resultsPanel').classList.remove('visible');
+  currentResponse = null;
+}
+
+function copyCorrectedCode() {
+  if (currentResponse?.correctedCode) {
+    navigator.clipboard.writeText(currentResponse.correctedCode);
+    Auth.showToast('Corrected code copied to clipboard!', 'success');
+  }
+}
+
+function loadSample() { monacoEditor.setValue(getSampleCode(selectedLang, urlType)); }
+
+function getSampleCode(lang, type) {
+  if (type === 'SQL') return SAMPLE_SQL;
+  if (type === 'STACKTRACE') return SAMPLE_STACKTRACE;
+  return SAMPLES[lang] || SAMPLES['Java'];
+}
+
+// ── Sample Code Snippets ─────────────────────────────────────────────────────
+const SAMPLES = {
+  'Java': `import java.util.ArrayList;
+import java.util.List;
+
+public class StudentManager {
+    private List<String> students;
+
+    public StudentManager() {
+        // Bug: students is never initialized
+    }
+
+    public void addStudent(String name) {
+        students.add(name); // NullPointerException here!
+    }
+
+    public void printAll() {
+        for (int i = 0; i <= students.size(); i++) { // Off-by-one error!
+            System.out.println(students.get(i));
+        }
+    }
+
+    public static void main(String[] args) {
+        StudentManager mgr = new StudentManager();
+        mgr.addStudent("Alice");
+        mgr.addStudent("Bob");
+        mgr.printAll();
+    }
+}`,
+  'Python': `def calculate_average(numbers):
+    total = 0
+    for num in numbers:
+        total += num
+    return total / len(numbers)  # ZeroDivisionError if empty!
+
+def find_element(lst, target):
+    for i in range(len(lst) + 1):  # IndexError: off-by-one
+        if lst[i] == target:
+            return i
+    return -1
+
+result = calculate_average([])
+print(result)`,
+  'JavaScript': `async function fetchUserData(userId) {
+    const response = await fetch('/api/users/' + userId)
+    const data = response.json() // Missing await!
+    
+    console.log(data.name.toUpperCase()) // TypeError if name is null
+    
+    return data
+}
+
+// Missing error handling
+fetchUserData(null)`,
+  'SQL': SAMPLE_SQL,
+  'Spring Boot': `@RestController
+public class UserController {
+    
+    @Autowired
+    UserRepository userRepo; // Field injection - bad practice
+    
+    @GetMapping("/user/{id}")
+    public User getUser(@PathVariable Long id) {
+        User user = userRepo.findById(id); // Wrong - findById returns Optional!
+        return user; // No null/empty check
+    }
+    
+    @PostMapping("/user")
+    public void createUser(@RequestBody User user) {
+        userRepo.save(user); // No validation!
+    }
+}`
+};
+
+const SAMPLE_STACKTRACE = `Exception in thread "main" java.lang.NullPointerException
+	at com.example.service.OrderService.processOrder(OrderService.java:45)
+	at com.example.controller.OrderController.createOrder(OrderController.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:897)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:742)
+Caused by: java.lang.NullPointerException: Cannot invoke "com.example.model.Customer.getEmail()"
+because "customer" is null
+	at com.example.service.OrderService.processOrder(OrderService.java:45)`;
+
+const SAMPLE_SQL = `-- Buggy SQL query
+SELECT u.name, o.total, p.product_name
+FROM users u, orders o, products p
+WHERE u.id = o.user_id
+AND o.id = p.order_id
+GROUP BY u.name
+HAVING total > 100
+ORDER BY total DESC`;
+</script>
+</body>
+</html>

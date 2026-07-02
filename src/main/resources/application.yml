@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: debugmate-ai
+  datasource:
+    url: jdbc:mysql://localhost:3306/debugmate_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:ajay@12345}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.springframework.security: INFO
+
+app:
+  jwt:
+    # 256-bit strong base64 encoded JWT secret key
+    secret: dGhpc2lzYWJlYXV0aWZ1bHN0cm9uZ3NlY3JldGtleWZvcmRlYnVnbWF0ZWFpcHJvamVjdGFzc2Vzc21lbnQ=
+    expirationMs: 86400000 # 24 Hours
+  gemini:
+    apiKey: ${GEMINI_API_KEY:}
+    model: gemini-1.5-flash

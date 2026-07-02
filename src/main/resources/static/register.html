@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - DebugMate AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="glass-panel auth-card">
+      <div class="text-center mb-4">
+        <a href="index.html" class="text-decoration-none">
+          <h2 class="text-gradient-cyan-purple d-flex align-items-center justify-content-center gap-2">
+            <i class="bi bi-cpu-fill"></i> DebugMate AI
+          </h2>
+        </a>
+        <p class="text-secondary mt-2">Create your account to unlock AI mentoring</p>
+      </div>
+
+      <form id="registerForm">
+        <div class="mb-3">
+          <label for="username" class="form-label text-secondary small">Username</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0 text-muted" style="border: 1px solid var(--border-color); border-radius: 10px 0 0 10px;"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control glass-input border-start-0" style="border-radius: 0 10px 10px 0;" id="username" placeholder="Choose a username" required minlength="3" maxlength="50">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="email" class="form-label text-secondary small">Email Address</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0 text-muted" style="border: 1px solid var(--border-color); border-radius: 10px 0 0 10px;"><i class="bi bi-envelope"></i></span>
+            <input type="email" class="form-control glass-input border-start-0" style="border-radius: 0 10px 10px 0;" id="email" placeholder="name@example.com" required>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label text-secondary small">Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0 text-muted" style="border: 1px solid var(--border-color); border-radius: 10px 0 0 10px;"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control glass-input border-start-0" style="border-radius: 0 10px 10px 0;" id="password" placeholder="At least 6 characters" required minlength="6" maxlength="40">
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="confirmPassword" class="form-label text-secondary small">Confirm Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0 text-muted" style="border: 1px solid var(--border-color); border-radius: 10px 0 0 10px;"><i class="bi bi-lock-fill"></i></span>
+            <input type="password" class="form-control glass-input border-start-0" style="border-radius: 0 10px 10px 0;" id="confirmPassword" placeholder="Confirm your password" required minlength="6" maxlength="40">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-glow-primary w-100 mb-3" id="submitBtn">
+          <span class="spinner-border spinner-border-sm d-none me-2" role="status" aria-hidden="true" id="loadingSpinner"></span>
+          Sign Up
+        </button>
+
+        <div class="text-center">
+          <p class="small text-secondary mb-0">Already have an account? <a href="login.html" class="text-gradient text-decoration-none fw-bold">Sign In</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script>
+    Auth.guardPage(false);
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const usernameInput = document.getElementById('username');
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const confirmPasswordInput = document.getElementById('confirmPassword');
+      const submitBtn = document.getElementById('submitBtn');
+      const spinner = document.getElementById('loadingSpinner');
+
+      if (passwordInput.value !== confirmPasswordInput.value) {
+        Auth.showToast('Passwords do not match.', 'error');
+        return;
+      }
+
+      const registerData = {
+        username: usernameInput.value.trim(),
+        email: emailInput.value.trim(),
+        password: passwordInput.value
+      };
+
+      submitBtn.disabled = true;
+      spinner.classList.remove('d-none');
+
+      try {
+        await Auth.apiCall('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(registerData)
+        });
+
+        Auth.showToast('Account created! Redirecting to login...', 'success');
+        
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+
+      } catch (error) {
+        Auth.showToast(error.message || 'Registration failed. Try another username/email.', 'error');
+        submitBtn.disabled = false;
+        spinner.classList.add('d-none');
+      }
+    });
+  </script>
+</body>
+</html>

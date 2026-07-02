@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - DebugMate AI | Enterprise Agentic AI Platform</title>
+  <meta name="description" content="DebugMate AI - Enterprise Agentic AI debugging assistant powered by Google Gemini LLM. Root cause analysis, code mentoring, and developer learning platform.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    .feature-card {
+      background: var(--bg-card); backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color); border-radius: 14px;
+      padding: 24px; transition: var(--transition);
+      cursor: pointer; text-decoration: none; display: block; color: inherit;
+    }
+    .feature-card:hover {
+      border-color: var(--primary); color: inherit;
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(79,172,254,0.12);
+    }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; margin-bottom: 16px;
+    }
+    .fi-blue   { background: rgba(79,172,254,0.12); color: var(--primary); }
+    .fi-purple { background: rgba(118,75,162,0.15); color: #a78bfa; }
+    .fi-green  { background: rgba(16,185,129,0.12); color: #34d399; }
+    .fi-orange { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .fi-cyan   { background: rgba(6,182,212,0.12);  color: #22d3ee; }
+    .fi-red    { background: rgba(239,68,68,0.12);  color: #f87171; }
+
+    .tech-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border-color);
+      border-radius: 20px; padding: 5px 14px; font-size: 0.78rem;
+      color: var(--text-secondary); margin: 4px;
+    }
+    .agent-step {
+      display: flex; gap: 16px; align-items: flex-start;
+      padding: 14px 0; border-bottom: 1px solid var(--border-color);
+    }
+    .agent-step:last-child { border-bottom: none; }
+    .step-num {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; color: #000;
+    }
+    .xp-progress { height: 6px; border-radius: 3px; background: var(--border-color); }
+    .xp-progress-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      transition: width 1s ease;
+    }
+    .stat-mini { font-size: 1.5rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link active"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="debug.html?type=STACKTRACE" class="sidebar-link"><i class="bi bi-terminal-split"></i> Stack Trace</a></li>
+      <li><a href="debug.html?type=SQL" class="sidebar-link"><i class="bi bi-database-fill-gear"></i> SQL Debugger</a></li>
+      <li><a href="debug.html?type=EXPLAIN" class="sidebar-link"><i class="bi bi-chat-square-text-fill"></i> Explain Code</a></li>
+      <li>
+        <div style="padding: 8px 16px; margin-top: 16px;">
+          <div class="small text-muted mb-2" style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">Coming Soon</div>
+        </div>
+      </li>
+      <li><a href="#" class="sidebar-link" style="opacity: 0.5; pointer-events: none;"><i class="bi bi-chat-dots-fill"></i> Chat Assistant</a></li>
+      <li><a href="#" class="sidebar-link" style="opacity: 0.5; pointer-events: none;"><i class="bi bi-journal-bookmark-fill"></i> Bug Library</a></li>
+      <li><a href="#" class="sidebar-link" style="opacity: 0.5; pointer-events: none;"><i class="bi bi-trophy-fill"></i> Achievements</a></li>
+      <li><a href="#" class="sidebar-link" style="opacity: 0.5; pointer-events: none;"><i class="bi bi-file-earmark-pdf"></i> Export Report</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">Developer</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- Welcome Header -->
+    <header class="mb-5">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="tech-pill"><i class="bi bi-robot" style="color:var(--primary)"></i> Agentic AI</span>
+            <span class="tech-pill"><i class="bi bi-lightning-charge" style="color:#fbbf24"></i> LLM Powered</span>
+            <span class="tech-pill"><i class="bi bi-shield-check" style="color:#34d399"></i> JWT Secured</span>
+          </div>
+          <h1 class="fw-bold mb-1" style="font-size:2rem;">
+            <span class="text-gradient">Good day,</span> <span id="welcomeName" class="text-gradient-cyan-purple">Developer</span> 👋
+          </h1>
+          <p class="text-secondary mb-0">Your AI mentor is ready. Let's squash some bugs and level up today.</p>
+        </div>
+        <div class="glass-panel d-flex align-items-center gap-3 px-4 py-3">
+          <i class="bi bi-fire fs-2 text-warning" style="filter:drop-shadow(0 0 8px rgba(245,158,11,0.6))"></i>
+          <div>
+            <div class="small text-secondary">Daily Streak</div>
+            <div class="fw-bold text-gradient fs-5" id="headerStreak">0 Days 🔥</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats Row -->
+    <div class="row g-4 mb-5">
+      <div class="col-md-3">
+        <div class="glass-panel stat-card">
+          <div class="d-flex justify-content-between mb-3">
+            <div class="stat-icon fi-blue"><i class="bi bi-check2-circle"></i></div>
+            <span class="badge-custom badge-low small">Total</span>
+          </div>
+          <div class="stat-mini text-gradient" id="statErrors">0</div>
+          <div class="small text-secondary mt-1">Bugs Resolved</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="glass-panel stat-card">
+          <div class="d-flex justify-content-between mb-3">
+            <div class="stat-icon fi-orange"><i class="bi bi-award"></i></div>
+            <span class="badge-custom badge-high small">XP</span>
+          </div>
+          <div class="stat-mini text-gradient" id="statXp">0</div>
+          <div class="small text-secondary mt-1">Experience Points</div>
+          <div class="xp-progress mt-2">
+            <div class="xp-progress-fill" id="xpBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="glass-panel stat-card">
+          <div class="d-flex justify-content-between mb-3">
+            <div class="stat-icon fi-green"><i class="bi bi-percent"></i></div>
+            <span class="badge-custom badge-medium small">Score</span>
+          </div>
+          <div class="stat-mini text-gradient" id="statAccuracy">100%</div>
+          <div class="small text-secondary mt-1">Accuracy Score</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="glass-panel stat-card">
+          <div class="d-flex justify-content-between mb-3">
+            <div class="stat-icon fi-purple"><i class="bi bi-cpu"></i></div>
+            <span class="badge-custom" style="background:rgba(118,75,162,0.15); color:#a78bfa; border:1px solid rgba(118,75,162,0.3);" class="small">AI</span>
+          </div>
+          <div class="stat-mini" style="color:#a78bfa;">LIVE</div>
+          <div class="small text-secondary mt-1">Agent Status</div>
+          <div class="d-flex align-items-center gap-1 mt-1">
+            <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;animation:pulse 2s infinite;"></span>
+            <span class="small" style="color:#34d399;">Simulation Mode</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="row g-4 mb-5">
+
+      <!-- AI Agent Pipeline visualization -->
+      <div class="col-lg-6">
+        <div class="glass-panel p-4 h-100">
+          <h5 class="text-gradient fw-bold mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3-fill text-primary"></i> AI Agent Pipeline
+          </h5>
+          <div class="agent-step">
+            <div class="step-num">1</div>
+            <div>
+              <div class="fw-semibold small">Code Input & Language Detection</div>
+              <div class="small text-secondary">Monaco Editor accepts Java, Python, JS, SQL, C++, Spring Boot</div>
+            </div>
+          </div>
+          <div class="agent-step">
+            <div class="step-num">2</div>
+            <div>
+              <div class="fw-semibold small">Context-Aware Prompt Engineering</div>
+              <div class="small text-secondary">Builds senior engineer system prompt with learning mode adaptation</div>
+            </div>
+          </div>
+          <div class="agent-step">
+            <div class="step-num">3</div>
+            <div>
+              <div class="fw-semibold small">Gemini LLM Analysis</div>
+              <div class="small text-secondary">Chain-of-thought reasoning: What → Why → Where → Fix</div>
+            </div>
+          </div>
+          <div class="agent-step">
+            <div class="step-num">4</div>
+            <div>
+              <div class="fw-semibold small">Structured JSON Parsing</div>
+              <div class="small text-secondary">Extracts errors, severity, corrected code, confidence score</div>
+            </div>
+          </div>
+          <div class="agent-step">
+            <div class="step-num">5</div>
+            <div>
+              <div class="fw-semibold small">Session Persistence + XP Award</div>
+              <div class="small text-secondary">Saves to MySQL, updates learning profile, triggers gamification</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Access Feature Cards -->
+      <div class="col-lg-6">
+        <div class="row g-3">
+          <div class="col-6">
+            <a href="debug.html" class="feature-card">
+              <div class="feature-icon fi-blue"><i class="bi bi-code-slash"></i></div>
+              <div class="fw-bold mb-1">AI Debugger</div>
+              <div class="small text-secondary">Root cause analysis + corrected code + mentor explanation</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="debug.html?type=STACKTRACE" class="feature-card">
+              <div class="feature-icon fi-red"><i class="bi bi-terminal-split"></i></div>
+              <div class="fw-bold mb-1">Stack Trace</div>
+              <div class="small text-secondary">Analyze Java exceptions — NPE, ArrayOOB, BeanCreation</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="debug.html?type=SQL" class="feature-card">
+              <div class="feature-icon fi-cyan"><i class="bi bi-database-fill-gear"></i></div>
+              <div class="fw-bold mb-1">SQL Debugger</div>
+              <div class="small text-secondary">Fix JOINs, GROUP BY, WHERE clauses and get optimized queries</div>
+            </a>
+          </div>
+          <div class="col-6">
+            <a href="debug.html?type=EXPLAIN" class="feature-card">
+              <div class="feature-icon fi-purple"><i class="bi bi-chat-square-text-fill"></i></div>
+              <div class="fw-bold mb-1">Code Explainer</div>
+              <div class="small text-secondary">Line-by-line AI explanation with complexity analysis</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tech Stack & Enterprise Row -->
+    <div class="row g-4 mb-5">
+      <div class="col-lg-7">
+        <div class="glass-panel p-4">
+          <h5 class="text-gradient fw-bold mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-stack text-primary"></i> Technology Stack
+          </h5>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="small text-muted mb-2 fw-semibold" style="letter-spacing:1px; text-transform:uppercase; font-size:0.7rem;">Backend</div>
+              <div>
+                <span class="tech-pill"><i class="bi bi-cup-hot-fill text-danger"></i> Java 17</span>
+                <span class="tech-pill"><i class="bi bi-box text-success"></i> Spring Boot 3.3</span>
+                <span class="tech-pill"><i class="bi bi-shield-lock text-warning"></i> Spring Security</span>
+                <span class="tech-pill"><i class="bi bi-database text-info"></i> Spring Data JPA</span>
+                <span class="tech-pill"><i class="bi bi-key text-primary"></i> JWT Auth</span>
+                <span class="tech-pill"><i class="bi bi-hammer text-secondary"></i> Maven</span>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="small text-muted mb-2 fw-semibold" style="letter-spacing:1px; text-transform:uppercase; font-size:0.7rem;">AI / LLM</div>
+              <div>
+                <span class="tech-pill"><i class="bi bi-robot text-primary"></i> Gemini 1.5 Flash</span>
+                <span class="tech-pill"><i class="bi bi-chat-quote text-info"></i> Prompt Engineering</span>
+                <span class="tech-pill"><i class="bi bi-diagram-3 text-warning"></i> Agentic Pipeline</span>
+                <span class="tech-pill"><i class="bi bi-volume-up text-success"></i> Voice AI (TTS)</span>
+              </div>
+            </div>
+            <div class="col-6 mt-2">
+              <div class="small text-muted mb-2 fw-semibold" style="letter-spacing:1px; text-transform:uppercase; font-size:0.7rem;">Frontend</div>
+              <div>
+                <span class="tech-pill"><i class="bi bi-filetype-html text-danger"></i> HTML5/CSS3</span>
+                <span class="tech-pill"><i class="bi bi-filetype-js text-warning"></i> JavaScript ES6</span>
+                <span class="tech-pill"><i class="bi bi-code-square text-primary"></i> Monaco Editor</span>
+                <span class="tech-pill"><i class="bi bi-bar-chart-fill text-success"></i> Chart.js</span>
+              </div>
+            </div>
+            <div class="col-6 mt-2">
+              <div class="small text-muted mb-2 fw-semibold" style="letter-spacing:1px; text-transform:uppercase; font-size:0.7rem;">Infrastructure</div>
+              <div>
+                <span class="tech-pill"><i class="bi bi-database-fill text-primary"></i> MySQL 8.0</span>
+                <span class="tech-pill"><i class="bi bi-box2-fill text-info"></i> Docker</span>
+                <span class="tech-pill"><i class="bi bi-git text-danger"></i> Git/GitHub</span>
+                <span class="tech-pill"><i class="bi bi-cloud-fill text-secondary"></i> REST APIs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile & Progress -->
+      <div class="col-lg-5">
+        <div class="glass-panel p-4 h-100">
+          <h5 class="text-gradient fw-bold mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-person-badge-fill text-primary"></i> Developer Profile
+          </h5>
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="profile-avatar" style="width:56px;height:56px;font-size:1.4rem;" id="bigAvatar">U</div>
+            <div>
+              <div class="fw-bold" id="profileName">Loading...</div>
+              <div class="small text-secondary" id="profileEmail">—</div>
+              <div class="mt-1">
+                <span class="badge" style="background:rgba(79,172,254,0.15);color:var(--primary);border:1px solid rgba(79,172,254,0.3);">
+                  <i class="bi bi-star-fill me-1"></i>Active Developer
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-secondary">Level Progress</span>
+              <span class="text-primary" id="levelText">Level 1</span>
+            </div>
+            <div class="xp-progress">
+              <div class="xp-progress-fill" id="levelBar" style="width:0%"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <span class="small text-muted" id="xpCurrent">0 XP</span>
+              <span class="small text-muted">100 XP next level</span>
+            </div>
+          </div>
+
+          <div class="row g-2 text-center">
+            <div class="col-4">
+              <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:12px;">
+                <div class="fw-bold text-gradient" id="totalBugs">0</div>
+                <div class="small text-secondary" style="font-size:0.72rem;">Bugs Fixed</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:12px;">
+                <div class="fw-bold text-gradient" id="totalStreakMini">0</div>
+                <div class="small text-secondary" style="font-size:0.72rem;">Day Streak</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:12px;">
+                <div class="fw-bold text-gradient" id="accScoreMini">100%</div>
+                <div class="small text-secondary" style="font-size:0.72rem;">Accuracy</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3" style="border-top:1px solid var(--border-color);">
+            <a href="debug.html" class="btn btn-glow-primary w-100 d-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-lightning-charge-fill"></i> Start AI Debugging Session
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enterprise Capabilities Banner -->
+    <div class="glass-panel p-4 mb-4" style="border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(79,172,254,0.05) 0%, rgba(118,75,162,0.05) 100%);">
+      <div class="row align-items-center">
+        <div class="col-lg-8">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-building fs-5 text-primary"></i>
+            <span class="fw-bold text-gradient">Enterprise-Grade Agentic AI</span>
+          </div>
+          <p class="text-secondary small mb-0">
+            DebugMate AI demonstrates production-level software engineering: <strong class="text-primary">Agentic AI pipelines</strong>,
+            <strong class="text-primary">LLM prompt engineering</strong>, <strong class="text-primary">RAG-inspired knowledge retrieval</strong>
+            (Bug Library), <strong class="text-primary">REST API design</strong>, <strong class="text-primary">JWT authentication</strong>,
+            <strong class="text-primary">Docker containerization</strong>, and <strong class="text-primary">workflow automation</strong> —
+            aligned with industry AI development practices.
+          </p>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+          <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
+            <span class="tech-pill"><i class="bi bi-check-circle text-success"></i> Simulation Mode Active</span>
+            <span class="tech-pill"><i class="bi bi-cloud-check text-primary"></i> API Ready</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<style>
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+</style>
+
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
+
+async function loadDashboard() {
+  try {
+    const p = await Auth.apiCall('/api/users/profile');
+
+    // Header
+    document.getElementById('welcomeName').innerText = p.username;
+    document.getElementById('headerStreak').innerText = `${p.dailyStreak} Day${p.dailyStreak !== 1 ? 's' : ''} 🔥`;
+
+    // Stats cards
+    document.getElementById('statErrors').innerText = p.totalErrorsSolved;
+    document.getElementById('statXp').innerText = p.xpPoints;
+    document.getElementById('statAccuracy').innerText = `${p.accuracyScore}%`;
+
+    // XP bar (cap at level milestones: every 100 XP)
+    const pct = Math.min((p.xpPoints % 100), 100);
+    document.getElementById('xpBar').style.width = pct + '%';
+
+    // Profile section
+    document.getElementById('profileName').innerText = p.username;
+    document.getElementById('profileEmail').innerText = p.email;
+    document.getElementById('bigAvatar').innerText = p.username.charAt(0).toUpperCase();
+    document.getElementById('totalBugs').innerText = p.totalErrorsSolved;
+    document.getElementById('totalStreakMini').innerText = p.dailyStreak;
+    document.getElementById('accScoreMini').innerText = `${p.accuracyScore}%`;
+    document.getElementById('xpCurrent').innerText = `${p.xpPoints} XP`;
+
+    // Level
+    const level = Math.floor(p.xpPoints / 100) + 1;
+    document.getElementById('levelText').innerText = `Level ${level}`;
+    document.getElementById('levelBar').style.width = pct + '%';
+
+    // Sidebar
+    document.getElementById('navUsername').innerText = p.username;
+    document.getElementById('navXp').innerText = `${p.xpPoints} XP`;
+    document.getElementById('navAvatar').innerText = p.username.charAt(0).toUpperCase();
+
+  } catch(e) {
+    Auth.showToast('Could not load profile data.', 'error');
+  }
+}
+</script>
+</body>
+</html>
