@@ -1,11 +1,11 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
     name: debugmate-ai
   datasource:
-    url: jdbc:mysql://localhost:3306/debugmate_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: ${DB_URL:jdbc:mysql://localhost:3306/debugmate_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:ajay@12345}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -26,8 +26,8 @@ logging:
 app:
   jwt:
     # 256-bit strong base64 encoded JWT secret key
-    secret: dGhpc2lzYWJlYXV0aWZ1bHN0cm9uZ3NlY3JldGtleWZvcmRlYnVnbWF0ZWFpcHJvamVjdGFzc2Vzc21lbnQ=
+    secret: ${JWT_SECRET:dGhpc2lzYWJlYXV0aWZ1bHN0cm9uZ3NlY3JldGtleWZvcmRlYnVnbWF0ZWFpcHJvamVjdGFzc2Vzc21lbnQ=}
     expirationMs: 86400000 # 24 Hours
   gemini:
-    apiKey: ${GEMINI_API_KEY:}
-    model: gemini-1.5-flash
+    apiKey: ${GEMINI_API_KEY:AIzaSyBqFHKZtcF4LWOXDDvuSlbtTJvtsqpTsY4}
+    model: gemini-flash-latest

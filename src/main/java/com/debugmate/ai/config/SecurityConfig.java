@@ -59,7 +59,7 @@ public class SecurityConfig {
                     "/index.html",
                     "/login.html",
                     "/register.html",
-                    "/debug.html",
+                    "/*.html",
                     "/css/**",
                     "/js/**",
                     "/favicon.ico",

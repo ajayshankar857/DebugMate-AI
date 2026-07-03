@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Report - DebugMate AI</title>
+  <meta name="description" content="Export your debugging sessions, learning progress, and AI mentorship report as a PDF or JSON.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .export-card {
+      background: rgba(18,22,33,0.65);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .export-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .export-card:hover { transform: translateY(-3px); }
+    .export-card:hover::before { opacity: 1; }
+    .export-card.pdf-card::before { background: linear-gradient(135deg, rgba(239,68,68,0.05), transparent); }
+    .export-card.json-card::before { background: linear-gradient(135deg, rgba(79,172,254,0.05), transparent); }
+    .export-card.csv-card::before { background: linear-gradient(135deg, rgba(16,185,129,0.05), transparent); }
+
+    .export-icon {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+    .export-icon.pdf-icon { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+    .export-icon.json-icon { background: rgba(79,172,254,0.12); color: var(--primary); border: 1px solid rgba(79,172,254,0.2); }
+    .export-icon.csv-icon { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.2); }
+
+    .stat-row {
+      display: flex; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+    .stat-row:last-child { border-bottom: none; }
+
+    .session-item {
+      background: rgba(5,6,8,0.5);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: var(--transition);
+    }
+    .session-item:hover { border-color: rgba(79,172,254,0.3); }
+
+    .sev-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 6px;
+    }
+    .sev-dot.CRITICAL { background: var(--danger); }
+    .sev-dot.HIGH     { background: var(--warning); }
+    .sev-dot.MEDIUM   { background: var(--info); }
+    .sev-dot.LOW      { background: var(--success); }
+    .sev-dot.SUGGESTION { background: #a78bfa; }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="chat.html" class="sidebar-link"><i class="bi bi-chat-dots-fill"></i> Chat Assistant</a></li>
+      <li><a href="library.html" class="sidebar-link"><i class="bi bi-journal-bookmark-fill"></i> Bug Library</a></li>
+      <li><a href="achievements.html" class="sidebar-link"><i class="bi bi-trophy-fill"></i> Achievements</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">User</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="mb-4">
+      <h1 class="text-gradient fw-bold mb-1">Export Report</h1>
+      <p class="text-secondary">Download your debugging history, learning progress and AI mentorship summary.</p>
+    </header>
+
+    <div class="row g-4">
+      <!-- Left: Stats Summary -->
+      <div class="col-lg-5">
+        <div class="export-card mb-4">
+          <h6 class="fw-bold text-white mb-3"><i class="bi bi-person-fill me-2 text-primary"></i>Your Profile Summary</h6>
+          <div id="profileStats">
+            <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          </div>
+        </div>
+
+        <div class="export-card">
+          <h6 class="fw-bold text-white mb-3"><i class="bi bi-clock-history me-2 text-secondary"></i>Recent Sessions</h6>
+          <div id="recentSessions">
+            <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Export Options -->
+      <div class="col-lg-7">
+        <div class="row g-3">
+          <!-- JSON Export -->
+          <div class="col-12">
+            <div class="export-card json-card">
+              <div class="export-icon json-icon"><i class="bi bi-filetype-json"></i></div>
+              <h5 class="fw-bold text-white mb-1">Export as JSON</h5>
+              <p class="text-secondary small mb-3">Download all your debugging sessions as a structured JSON file. Perfect for analysis or integration.</p>
+              <button class="btn btn-glow-primary" onclick="exportJSON()">
+                <i class="bi bi-download me-2"></i>Download JSON Report
+              </button>
+            </div>
+          </div>
+
+          <!-- CSV Export -->
+          <div class="col-md-6">
+            <div class="export-card csv-card">
+              <div class="export-icon csv-icon"><i class="bi bi-filetype-csv"></i></div>
+              <h5 class="fw-bold text-white mb-1">Export as CSV</h5>
+              <p class="text-secondary small mb-3">Spreadsheet-compatible format for tracking bugs over time.</p>
+              <button class="btn btn-outline-glass w-100" onclick="exportCSV()">
+                <i class="bi bi-table me-2"></i>Download CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- PDF Note -->
+          <div class="col-md-6">
+            <div class="export-card pdf-card">
+              <div class="export-icon pdf-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+              <h5 class="fw-bold text-white mb-1">PDF Report</h5>
+              <p class="text-secondary small mb-3">Full formatted report. Use browser print (Ctrl+P → Save as PDF).</p>
+              <button class="btn btn-outline-glass w-100" onclick="printReport()">
+                <i class="bi bi-printer me-2"></i>Print / Save PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+const user = Auth.getUser();
+if (user) {
+  document.getElementById('navUsername').textContent = user.username || 'User';
+  if (user.username) document.getElementById('navAvatar').textContent = user.username[0].toUpperCase();
+}
+
+let profileData = null;
+let sessionsData = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [profile, sessions] = await Promise.allSettled([
+      Auth.apiCall('/api/users/profile'),
+      Auth.apiCall('/api/debug/history')
+    ]);
+
+    if (profile.status === 'fulfilled' && profile.value) {
+      const p = profile.value;
+      profileData = p;
+      document.getElementById('navXp').textContent = (p.xpPoints || 0) + ' XP';
+      document.getElementById('profileStats').innerHTML = `
+        <div class="stat-row"><span class="text-secondary">Username</span><span class="text-white fw-semibold">${user?.username || '—'}</span></div>
+        <div class="stat-row"><span class="text-secondary">XP Points</span><span class="text-primary fw-bold">${p.xpPoints || 0} XP</span></div>
+        <div class="stat-row"><span class="text-secondary">Bugs Solved</span><span class="text-success fw-semibold">${p.totalErrorsSolved || 0}</span></div>
+        <div class="stat-row"><span class="text-secondary">Daily Streak</span><span class="text-warning fw-semibold">${p.dailyStreak || 0} days 🔥</span></div>
+        <div class="stat-row"><span class="text-secondary">Accuracy Score</span><span class="text-info fw-semibold">${p.accuracyScore || 0}%</span></div>
+      `;
+    } else {
+      document.getElementById('profileStats').innerHTML = '<p class="text-muted small">Profile data unavailable.</p>';
+    }
+
+    if (sessions.status === 'fulfilled' && sessions.value) {
+      sessionsData = sessions.value;
+      const recent = sessionsData.slice(0, 5);
+      if (recent.length === 0) {
+        document.getElementById('recentSessions').innerHTML = '<p class="text-muted small">No sessions yet. Start debugging!</p>';
+      } else {
+        document.getElementById('recentSessions').innerHTML = recent.map(s => {
+          const sev = (s.severity || 'MEDIUM').toUpperCase();
+          const date = s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—';
+          return `
+            <div class="session-item">
+              <div>
+                <span class="sev-dot ${sev}"></span>
+                <span class="text-white fw-semibold small">${s.programmingLanguage || 'Code'}</span>
+                <span class="text-muted small ms-2">${s.sessionType || 'DEBUG'}</span>
+              </div>
+              <span class="text-muted small">${date}</span>
+            </div>`;
+        }).join('');
+      }
+    } else {
+      document.getElementById('recentSessions').innerHTML = '<p class="text-muted small">Session history unavailable.</p>';
+    }
+
+  } catch(e) {
+    console.error(e);
+  }
+});
+
+function exportJSON() {
+  const data = {
+    exportedAt: new Date().toISOString(),
+    user: { username: user?.username, xp: profileData?.xpPoints, bugsSolved: profileData?.totalErrorsSolved },
+    sessions: sessionsData
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  download(blob, `debugmate-report-${Date.now()}.json`);
+  Auth.showToast('JSON report downloaded!', 'success');
+}
+
+function exportCSV() {
+  if (sessionsData.length === 0) {
+    Auth.showToast('No session data to export yet.', 'info');
+    return;
+  }
+  const headers = ['ID', 'Language', 'Session Type', 'Severity', 'Error Count', 'Confidence Score', 'Date'];
+  const rows = sessionsData.map(s => [
+    s.id || '',
+    s.programmingLanguage || '',
+    s.sessionType || '',
+    s.severity || '',
+    s.errorCount || 0,
+    s.confidenceScore || 0,
+    s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ''
+  ]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  download(blob, `debugmate-sessions-${Date.now()}.csv`);
+  Auth.showToast('CSV downloaded!', 'success');
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function printReport() {
+  window.print();
+}
+</script>
+</body>
+</html>

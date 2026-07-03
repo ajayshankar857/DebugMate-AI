@@ -5,6 +5,7 @@ import com.debugmate.ai.dto.DebugResponseDto;
 import com.debugmate.ai.entity.DebugSession;
 import com.debugmate.ai.entity.User;
 import com.debugmate.ai.repository.DebugSessionRepository;
+import com.debugmate.ai.agent.DebugAgent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.List;
 @Slf4j
 public class DebugService {
 
-    private final GeminiService geminiService;
+    private final DebugAgent debugAgent;
     private final DebugSessionRepository sessionRepository;
     private final UserService userService;
     private final ObjectMapper objectMapper;
@@ -27,8 +28,8 @@ public class DebugService {
     public DebugResponseDto analyzeCode(DebugRequestDto request, String username) {
         User user = userService.findByUsername(username);
 
-        // Call AI service
-        DebugResponseDto response = geminiService.analyzeCode(
+        // Run the AI Agent pipeline (Plan -> RAG -> LLM -> Parse)
+        DebugResponseDto response = debugAgent.analyze(
             request.getCode(),
             request.getLanguage(),
             request.getLearningMode() != null ? request.getLearningMode() : "INTERMEDIATE",

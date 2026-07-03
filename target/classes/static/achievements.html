@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Achievements - DebugMate AI</title>
+  <meta name="description" content="Track your debugging achievements, badges, and learning milestones on DebugMate AI.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .badge-card {
+      background: rgba(18, 22, 33, 0.65);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px 20px;
+      text-align: center;
+      transition: var(--transition);
+      opacity: 0.45;
+      filter: grayscale(80%);
+      position: relative;
+      overflow: hidden;
+    }
+    .badge-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(79,172,254,0.03), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .badge-card.unlocked {
+      opacity: 1;
+      filter: none;
+      border-color: rgba(79,172,254,0.4);
+      box-shadow: 0 0 24px rgba(79,172,254,0.12);
+    }
+    .badge-card.unlocked::before { opacity: 1; }
+    .badge-card:hover { transform: translateY(-4px); }
+    .badge-card.unlocked:hover { box-shadow: 0 8px 32px rgba(79,172,254,0.2); }
+
+    .badge-icon {
+      font-size: 3rem;
+      margin-bottom: 14px;
+      display: block;
+      line-height: 1;
+    }
+    .badge-card.unlocked .badge-icon {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .unlock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-top: 10px;
+    }
+    .lock-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(100,116,139,0.1);
+      border: 1px solid rgba(100,116,139,0.2);
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-top: 10px;
+    }
+    .progress-header {
+      background: linear-gradient(135deg, rgba(79,172,254,0.08), rgba(118,75,162,0.08));
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+    .xp-bar { height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+    .xp-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 1s ease; }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="chat.html" class="sidebar-link"><i class="bi bi-chat-dots-fill"></i> Chat Assistant</a></li>
+      <li><a href="library.html" class="sidebar-link"><i class="bi bi-journal-bookmark-fill"></i> Bug Library</a></li>
+      <li><a href="achievements.html" class="sidebar-link active"><i class="bi bi-trophy-fill"></i> Achievements</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">User</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="mb-4">
+      <h1 class="text-gradient fw-bold mb-1">Achievements</h1>
+      <p class="text-secondary">Earn badges by debugging, learning, and growing as a developer.</p>
+    </header>
+
+    <!-- Progress Summary -->
+    <div class="progress-header" id="progressSummary">
+      <div class="row align-items-center g-3">
+        <div class="col-md-4">
+          <div class="d-flex align-items-center gap-3">
+            <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;color:#fff;" id="levelBadge">1</div>
+            <div>
+              <div class="fw-bold text-white">Level <span id="levelNum">1</span></div>
+              <div class="small text-secondary"><span id="unlockedCount">0</span> / 8 Badges Earned</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="small text-secondary mb-1">XP Progress</div>
+          <div class="xp-bar"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+          <div class="small text-muted mt-1"><span id="xpCount">0</span> XP</div>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <div class="small text-secondary">Total Bugs Solved</div>
+          <div class="fs-3 fw-bold text-gradient" id="bugsSolved">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4" id="badgesContainer">
+      <!-- Skeleton loaders -->
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="badge-card"><div style="height:160px;background:rgba(255,255,255,0.03);border-radius:8px;"></div></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="badge-card"><div style="height:160px;background:rgba(255,255,255,0.03);border-radius:8px;"></div></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="badge-card"><div style="height:160px;background:rgba(255,255,255,0.03);border-radius:8px;"></div></div>
+      </div>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="badge-card"><div style="height:160px;background:rgba(255,255,255,0.03);border-radius:8px;"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+// Load user profile into sidebar
+const user = Auth.getUser();
+if (user) {
+  document.getElementById('navUsername').textContent = user.username || 'User';
+  if (user.username) {
+    document.getElementById('navAvatar').textContent = user.username[0].toUpperCase();
+  }
+}
+
+const ALL_BADGES = [
+  { name: "First Blood",    desc: "Solve your very first bug",       icon: "bi-star-fill",             req: "Solve 1 bug",        threshold: 1,  type: "bugs" },
+  { name: "Bug Hunter",     desc: "Solved 10 bugs total",            icon: "bi-bug-fill",              req: "Solve 10 bugs",      threshold: 10, type: "bugs" },
+  { name: "Code Warrior",   desc: "Solved 25 bugs — going strong",   icon: "bi-shield-fill-check",     req: "Solve 25 bugs",      threshold: 25, type: "bugs" },
+  { name: "Debug Master",   desc: "Elite level — 50 bugs solved",    icon: "bi-trophy-fill",           req: "Solve 50 bugs",      threshold: 50, type: "bugs" },
+  { name: "Streak Starter", desc: "Maintained a 3-day streak",       icon: "bi-fire",                  req: "3-day streak",       threshold: 3,  type: "streak" },
+  { name: "On Fire",        desc: "Maintained a 7-day streak",       icon: "bi-lightning-charge-fill", req: "7-day streak",       threshold: 7,  type: "streak" },
+  { name: "XP Collector",   desc: "Earned 100 XP from debugging",    icon: "bi-gem",                   req: "Earn 100 XP",        threshold: 100, type: "xp" },
+  { name: "XP Legend",      desc: "500 XP — a true AI Mentor user",  icon: "bi-award-fill",            req: "Earn 500 XP",        threshold: 500, type: "xp" }
+];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [profileData, achievementsData] = await Promise.allSettled([
+      Auth.apiCall('/api/users/profile'),
+      Auth.apiCall('/api/achievements')
+    ]);
+
+    let unlockedNames = [];
+    let xp = 0, bugs = 0, streak = 0;
+
+    if (profileData.status === 'fulfilled' && profileData.value) {
+      const p = profileData.value;
+      xp = p.xpPoints || 0;
+      bugs = p.totalErrorsSolved || 0;
+      streak = p.dailyStreak || 0;
+      document.getElementById('navXp').textContent = xp + ' XP';
+    }
+
+    if (achievementsData.status === 'fulfilled' && achievementsData.value) {
+      unlockedNames = achievementsData.value.map(a => a.name);
+    }
+
+    // If no achievements from API, compute locally from profile stats
+    if (unlockedNames.length === 0) {
+      ALL_BADGES.forEach(b => {
+        let val = b.type === 'bugs' ? bugs : b.type === 'streak' ? streak : xp;
+        if (val >= b.threshold) unlockedNames.push(b.name);
+      });
+    }
+
+    const unlocked = ALL_BADGES.filter(b => unlockedNames.includes(b.name)).length;
+    const level = Math.max(1, Math.floor(xp / 100) + 1);
+    const xpInLevel = xp % 100;
+
+    document.getElementById('unlockedCount').textContent = unlocked;
+    document.getElementById('levelNum').textContent = level;
+    document.getElementById('levelBadge').textContent = level;
+    document.getElementById('xpCount').textContent = xp;
+    document.getElementById('xpBarFill').style.width = xpInLevel + '%';
+    document.getElementById('bugsSolved').textContent = bugs;
+
+    const container = document.getElementById('badgesContainer');
+    container.innerHTML = ALL_BADGES.map(b => {
+      const isUnlocked = unlockedNames.includes(b.name);
+      return `
+        <div class="col-6 col-md-4 col-lg-3">
+          <div class="badge-card ${isUnlocked ? 'unlocked' : ''}">
+            <span class="badge-icon"><i class="bi ${b.icon}"></i></span>
+            <h6 class="fw-bold text-white mb-1">${b.name}</h6>
+            <div class="small text-secondary">${b.desc}</div>
+            <div class="small text-muted mt-1">${b.req}</div>
+            ${isUnlocked
+              ? '<div class="unlock-badge"><i class="bi bi-check-circle-fill"></i> Unlocked</div>'
+              : '<div class="lock-badge"><i class="bi bi-lock-fill"></i> Locked</div>'}
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    console.error(e);
+    Auth.showToast('Failed to load achievements', 'error');
+  }
+});
+</script>
+</body>
+</html>

@@ -119,8 +119,8 @@
     </div>
 
     <div class="row g-4">
-      <!-- LEFT: Monaco Editor -->
-      <div class="col-lg-6">
+      <!-- LEFT: Monaco Editor (Made Sticky) -->
+      <div class="col-lg-6" style="position: sticky; top: 20px; height: fit-content; z-index: 10;">
         <div class="glass-panel p-3">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="small text-secondary fw-semibold d-flex align-items-center gap-2">
@@ -152,7 +152,7 @@
       <div class="col-lg-6">
 
         <!-- Placeholder (before analysis) -->
-        <div id="resultsPlaceholder" class="glass-panel p-5 text-center h-100 d-flex flex-column justify-content-center align-items-center">
+        <div id="resultsPlaceholder" class="glass-panel p-5 text-center d-flex flex-column justify-content-center align-items-center" style="min-height:260px;">
           <div class="display-3 text-gradient-cyan-purple mb-3">
             <i class="bi bi-robot"></i>
           </div>
@@ -307,24 +307,24 @@ const langMap = {
 const urlType = new URLSearchParams(window.location.search).get('type');
 
 // ── Init Monaco ──────────────────────────────────────────────────────────────
-require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }});
-require(['vs/editor/editor.main'], function() {
+window.MonacoEnvironment = {
+  getWorkerUrl: function(workerId, label) {
+    return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+      self.MonacoEnvironment = {
+        baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/'
+      };
+      importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/base/worker/workerMain.js');`
+    )}`;
+  }
+};
 
-  const darkTheme = {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [],
-    colors: {
-      'editor.background': '#05060880',
-      'editor.lineHighlightBackground': '#0b0c1080',
-    }
-  };
-  monaco.editor.defineTheme('debugmateDark', darkTheme);
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
 
   monacoEditor = monaco.editor.create(document.getElementById('editorContainer'), {
     value: getSampleCode(selectedLang, urlType),
     language: langMap[selectedLang],
-    theme: 'debugmateDark',
+    theme: 'vs-dark',
     fontSize: 14,
     fontFamily: "'JetBrains Mono', monospace",
     lineNumbers: 'on',
@@ -336,7 +336,7 @@ require(['vs/editor/editor.main'], function() {
 
   // Init diff editor (hidden until results arrive)
   monacoDiffEditor = monaco.editor.createDiffEditor(document.getElementById('diffContainer'), {
-    theme: 'debugmateDark',
+    theme: 'vs-dark',
     fontSize: 13,
     fontFamily: "'JetBrains Mono', monospace",
     readOnly: true,
@@ -540,6 +540,26 @@ function getSampleCode(lang, type) {
 }
 
 // ── Sample Code Snippets ─────────────────────────────────────────────────────
+const SAMPLE_STACKTRACE = `Exception in thread "main" java.lang.NullPointerException
+	at com.example.service.OrderService.processOrder(OrderService.java:45)
+	at com.example.controller.OrderController.createOrder(OrderController.java:28)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:897)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:742)
+Caused by: java.lang.NullPointerException: Cannot invoke "com.example.model.Customer.getEmail()"
+because "customer" is null
+	at com.example.service.OrderService.processOrder(OrderService.java:45)`;
+
+const SAMPLE_SQL = `-- Buggy SQL query
+SELECT u.name, o.total, p.product_name
+FROM users u, orders o, products p
+WHERE u.id = o.user_id
+AND o.id = p.order_id
+GROUP BY u.name
+HAVING total > 100
+ORDER BY total DESC`;
+
 const SAMPLES = {
   'Java': `import java.util.ArrayList;
 import java.util.List;
@@ -613,25 +633,6 @@ public class UserController {
 }`
 };
 
-const SAMPLE_STACKTRACE = `Exception in thread "main" java.lang.NullPointerException
-	at com.example.service.OrderService.processOrder(OrderService.java:45)
-	at com.example.controller.OrderController.createOrder(OrderController.java:28)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:897)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:742)
-Caused by: java.lang.NullPointerException: Cannot invoke "com.example.model.Customer.getEmail()"
-because "customer" is null
-	at com.example.service.OrderService.processOrder(OrderService.java:45)`;
-
-const SAMPLE_SQL = `-- Buggy SQL query
-SELECT u.name, o.total, p.product_name
-FROM users u, orders o, products p
-WHERE u.id = o.user_id
-AND o.id = p.order_id
-GROUP BY u.name
-HAVING total > 100
-ORDER BY total DESC`;
 </script>
 </body>
 </html>

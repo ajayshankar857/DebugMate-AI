@@ -1,7 +1,12 @@
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\agent\DebugAgent.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\config\DatabaseSeeder.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\config\SecurityConfig.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\config\WebMvcConfig.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\AchievementController.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\AuthController.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\BugKnowledgeController.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\ChatController.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\DashboardController.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\DebugController.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\controller\UserController.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\DebugMateApplication.java
@@ -11,6 +16,9 @@ C:\Debugging_Agent\src\main\java\com\debugmate\ai\dto\JwtResponseDto.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\dto\LoginRequestDto.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\dto\UserProfileDto.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\dto\UserRegistrationDto.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\Achievement.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\BugKnowledge.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\ChatMessage.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\DebugSession.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\ERole.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\Role.java
@@ -19,6 +27,10 @@ C:\Debugging_Agent\src\main\java\com\debugmate\ai\entity\UserProfile.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\exception\BadRequestException.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\exception\GlobalExceptionHandler.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\exception\ResourceNotFoundException.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\llm\GeminiLlmClient.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\AchievementRepository.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\BugKnowledgeRepository.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\ChatMessageRepository.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\DebugSessionRepository.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\RoleRepository.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\repository\UserProfileRepository.java
@@ -28,8 +40,11 @@ C:\Debugging_Agent\src\main\java\com\debugmate\ai\security\CustomUserDetailsServ
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\security\JwtAuthenticationFilter.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\security\JwtTokenProvider.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\security\UserDetailsImpl.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\AchievementService.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\AuthService.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\ChatService.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\DashboardService.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\DebugService.java
-C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\GeminiService.java
+C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\RagService.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\UserService.java
 C:\Debugging_Agent\src\main\java\com\debugmate\ai\service\UserServiceImpl.java

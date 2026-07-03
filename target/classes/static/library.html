@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bug Library - DebugMate AI</title>
+  <meta name="description" content="Browse the RAG-powered Bug Knowledge Base. Common programming errors, fixes, and best practices.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .filter-bar {
+      background: rgba(18,22,33,0.65);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      background: rgba(5,6,8,0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 10px;
+      padding: 10px 16px 10px 40px;
+      transition: var(--transition);
+    }
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; }
+    .search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+    .lang-filter-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .lang-filter-btn:hover, .lang-filter-btn.active {
+      background: rgba(79,172,254,0.12);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .bug-card {
+      background: rgba(18,22,33,0.65);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+      border-left: 4px solid var(--border-color);
+    }
+    .bug-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,172,254,0.07); }
+    .bug-card.sev-CRITICAL { border-left-color: var(--danger); }
+    .bug-card.sev-HIGH     { border-left-color: var(--warning); }
+    .bug-card.sev-MEDIUM   { border-left-color: var(--info); }
+    .bug-card.sev-LOW      { border-left-color: var(--success); }
+
+    .code-snippet {
+      background: rgba(5,6,8,0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #a78bfa;
+      line-height: 1.6;
+      margin: 12px 0;
+      white-space: pre-wrap;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .empty-state i {
+      font-size: 4rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sev-badge-CRITICAL { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .sev-badge-HIGH     { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .sev-badge-MEDIUM   { background: rgba(6,182,212,0.12);  color: #22d3ee; border: 1px solid rgba(6,182,212,0.3);  }
+    .sev-badge-LOW      { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+    .lang-pill {
+      background: rgba(79,172,254,0.1);
+      border: 1px solid rgba(79,172,254,0.25);
+      color: var(--primary);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="chat.html" class="sidebar-link"><i class="bi bi-chat-dots-fill"></i> Chat Assistant</a></li>
+      <li><a href="library.html" class="sidebar-link active"><i class="bi bi-journal-bookmark-fill"></i> Bug Library</a></li>
+      <li><a href="achievements.html" class="sidebar-link"><i class="bi bi-trophy-fill"></i> Achievements</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">User</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="text-gradient fw-bold mb-1">RAG Bug Knowledge Base</h1>
+        <p class="text-secondary mb-0">Search through common programming errors and their solutions used by the AI agent.</p>
+      </div>
+      <div class="glass-panel px-3 py-2">
+        <span class="small text-secondary">Total Entries: </span>
+        <span class="fw-bold text-primary" id="totalCount">—</span>
+      </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <i class="bi bi-search"></i>
+        <input type="text" id="searchInput" class="search-box" placeholder="Search bugs, languages, solutions...">
+      </div>
+      <div class="d-flex gap-2 flex-wrap" id="langFilters">
+        <button class="lang-filter-btn active" onclick="filterLang('all', this)">All</button>
+      </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="row" id="libraryContainer">
+      <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="text-secondary mt-2">Loading knowledge base...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+const user = Auth.getUser();
+if (user) {
+  document.getElementById('navUsername').textContent = user.username || 'User';
+  if (user.username) document.getElementById('navAvatar').textContent = user.username[0].toUpperCase();
+}
+
+let allBugs = [];
+let activeFilter = 'all';
+
+function renderBugs(bugs) {
+  const container = document.getElementById('libraryContainer');
+  if (!bugs || bugs.length === 0) {
+    container.innerHTML = `
+      <div class="col-12">
+        <div class="empty-state">
+          <i class="bi bi-journal-x"></i>
+          <h4 class="fw-bold text-white mt-3">No entries found</h4>
+          <p class="text-secondary">Try a different search term or language filter.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = bugs.map(b => {
+    const sev = (b.severity || 'MEDIUM').toUpperCase();
+    const safeName = (b.exampleCode || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `
+      <div class="col-md-6">
+        <div class="bug-card sev-${sev}">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="lang-pill"><i class="bi bi-code-slash me-1"></i>${b.language || 'General'}</span>
+            <span class="badge-custom sev-badge-${sev}">${sev}</span>
+          </div>
+          <h5 class="text-white fw-bold mb-1">${b.title || 'Unknown Error'}</h5>
+          <p class="text-secondary small mb-0">${b.description || ''}</p>
+          ${safeName ? `<div class="code-snippet">${safeName.replace(/\n/g, '<br>')}</div>` : ''}
+          <div class="d-flex flex-column gap-1">
+            ${b.solution ? `<div class="small"><span class="text-success fw-semibold"><i class="bi bi-check2-circle me-1"></i>Fix:</span> <span class="text-secondary">${b.solution}</span></div>` : ''}
+            ${b.bestPractice ? `<div class="small"><span class="text-warning fw-semibold"><i class="bi bi-lightbulb me-1"></i>Tip:</span> <span class="text-secondary">${b.bestPractice}</span></div>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allBugs.filter(b => {
+    const inLang = activeFilter === 'all' || (b.language || '').toLowerCase() === activeFilter;
+    const inSearch = !q
+      || (b.title || '').toLowerCase().includes(q)
+      || (b.description || '').toLowerCase().includes(q)
+      || (b.solution || '').toLowerCase().includes(q)
+      || (b.category || '').toLowerCase().includes(q);
+    return inLang && inSearch;
+  });
+  renderBugs(filtered);
+}
+
+function filterLang(lang, btn) {
+  activeFilter = lang;
+  document.querySelectorAll('.lang-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    allBugs = await Auth.apiCall('/api/knowledge');
+    document.getElementById('totalCount').textContent = allBugs.length;
+
+    // Build language filters
+    const langs = [...new Set(allBugs.map(b => b.language).filter(Boolean))];
+    const filterWrap = document.getElementById('langFilters');
+    langs.forEach(lang => {
+      const btn = document.createElement('button');
+      btn.className = 'lang-filter-btn';
+      btn.textContent = lang;
+      btn.onclick = function() { filterLang(lang.toLowerCase(), this); };
+      filterWrap.appendChild(btn);
+    });
+
+    renderBugs(allBugs);
+  } catch(e) {
+    console.error(e);
+    document.getElementById('libraryContainer').innerHTML = `
+      <div class="col-12">
+        <div class="empty-state">
+          <i class="bi bi-exclamation-triangle"></i>
+          <h4 class="fw-bold text-white mt-3">Failed to load knowledge base</h4>
+          <p class="text-secondary">Please refresh the page or check your connection.</p>
+        </div>
+      </div>`;
+    Auth.showToast('Failed to load knowledge base', 'error');
+  }
+});
+</script>
+</body>
+</html>

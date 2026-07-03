@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Mentor Chat - DebugMate AI</title>
+  <meta name="description" content="Chat with your AI senior engineer mentor. Ask questions about code, architecture, and best practices.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 220px);
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: rgba(5,6,8,0.45);
+      border: 1px solid var(--border-color);
+      border-radius: 14px 14px 0 0;
+      scroll-behavior: smooth;
+    }
+    .chat-footer {
+      background: rgba(10,11,15,0.95);
+      border: 1px solid var(--border-color);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      padding: 14px 20px;
+    }
+    .msg-row {
+      display: flex;
+      margin-bottom: 18px;
+      animation: fade-up 0.3s ease;
+    }
+    .msg-row.user-row { flex-direction: row-reverse; }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .msg-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .msg-avatar.ai-avatar {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+    }
+    .msg-avatar.user-avatar {
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      color: #fff;
+    }
+    .msg-bubble {
+      max-width: 70%;
+      padding: 12px 18px;
+      border-radius: 14px;
+      line-height: 1.6;
+      font-size: 0.93rem;
+    }
+    .msg-row.ai-row .msg-bubble {
+      background: rgba(79,172,254,0.07);
+      border: 1px solid rgba(79,172,254,0.15);
+      color: var(--text-secondary);
+      margin-left: 12px;
+      border-radius: 4px 14px 14px 14px;
+    }
+    .msg-row.user-row .msg-bubble {
+      background: rgba(118,75,162,0.15);
+      border: 1px solid rgba(118,75,162,0.3);
+      color: var(--text-primary);
+      margin-right: 12px;
+      border-radius: 14px 4px 14px 14px;
+    }
+    .msg-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+    .msg-row.ai-row .msg-time { margin-left: 12px; }
+    .msg-row.user-row .msg-time { margin-right: 12px; text-align: right; }
+
+    .typing-indicator span {
+      display: inline-block;
+      width: 7px; height: 7px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: blink 1.2s infinite;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    #chatInput {
+      background: rgba(5,6,8,0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 10px;
+      padding: 12px 16px;
+      transition: var(--transition);
+    }
+    #chatInput:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .quick-prompts .badge {
+      cursor: pointer;
+      background: rgba(79,172,254,0.08);
+      border: 1px solid rgba(79,172,254,0.2);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 400;
+      transition: var(--transition);
+    }
+    .quick-prompts .badge:hover {
+      background: rgba(79,172,254,0.15);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+<div class="layout-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="index.html" class="sidebar-logo text-gradient-cyan-purple">
+      <i class="bi bi-cpu-fill"></i> DebugMate AI
+    </a>
+    <ul class="sidebar-menu">
+      <li><a href="index.html" class="sidebar-link"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+      <li><a href="debug.html" class="sidebar-link"><i class="bi bi-code-slash"></i> AI Debugger</a></li>
+      <li><a href="chat.html" class="sidebar-link active"><i class="bi bi-chat-dots-fill"></i> Chat Assistant</a></li>
+      <li><a href="library.html" class="sidebar-link"><i class="bi bi-journal-bookmark-fill"></i> Bug Library</a></li>
+      <li><a href="achievements.html" class="sidebar-link"><i class="bi bi-trophy-fill"></i> Achievements</a></li>
+    </ul>
+    <div class="sidebar-profile">
+      <div class="profile-avatar" id="navAvatar">U</div>
+      <div class="profile-info me-auto">
+        <span class="profile-name" id="navUsername">User</span>
+        <span class="profile-xp" id="navXp">0 XP</span>
+      </div>
+      <button class="btn btn-link text-danger p-0" onclick="Auth.logout()" title="Logout">
+        <i class="bi bi-box-arrow-right fs-5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h1 class="text-gradient fw-bold mb-1">AI Mentor Chat</h1>
+        <p class="text-secondary mb-0">Ask your senior engineer anything about code, architecture, or best practices.</p>
+      </div>
+      <button class="btn btn-outline-glass btn-sm" onclick="clearChat()">
+        <i class="bi bi-trash3"></i> Clear Chat
+      </button>
+    </header>
+
+    <!-- Quick prompts -->
+    <div class="quick-prompts d-flex flex-wrap gap-2 mb-3">
+      <span class="badge" onclick="sendQuick('What is the difference between == and equals() in Java?')">Java == vs equals()</span>
+      <span class="badge" onclick="sendQuick('Explain NullPointerException and how to avoid it')">NullPointerException</span>
+      <span class="badge" onclick="sendQuick('What are SOLID principles in object oriented design?')">SOLID Principles</span>
+      <span class="badge" onclick="sendQuick('How do I write efficient SQL queries?')">SQL Optimization</span>
+      <span class="badge" onclick="sendQuick('What is time complexity and Big-O notation?')">Big-O Notation</span>
+    </div>
+
+    <div class="chat-wrap">
+      <div id="chatMessages" class="chat-messages">
+        <!-- Initial AI greeting -->
+        <div class="msg-row ai-row" id="greetingMsg">
+          <div class="msg-avatar ai-avatar"><i class="bi bi-robot"></i></div>
+          <div>
+            <div class="msg-bubble">
+              👋 Hello! I'm your <strong>AI Senior Engineer Mentor</strong> powered by Gemini AI.<br><br>
+              Ask me anything about code bugs, best practices, design patterns, algorithms, or anything else programming-related. I'm here to help you grow!
+            </div>
+            <div class="msg-time">Just now</div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <form id="chatForm" class="d-flex gap-2">
+          <input type="text" id="chatInput" class="form-control flex-grow-1" placeholder="Ask your AI mentor anything..." autocomplete="off">
+          <button type="submit" class="btn btn-glow-primary px-4" id="chatBtn">
+            <i class="bi bi-send-fill" id="chatBtnIcon"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+Auth.guardPage(true);
+
+const user = Auth.getUser();
+if (user) {
+  document.getElementById('navUsername').textContent = user.username || 'User';
+  if (user.username) document.getElementById('navAvatar').textContent = user.username[0].toUpperCase();
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function appendMessage(text, isUser) {
+  const chatBox = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = `msg-row ${isUser ? 'user-row' : 'ai-row'}`;
+
+  const avatarHtml = isUser
+    ? `<div class="msg-avatar user-avatar">${(user?.username?.[0] || 'U').toUpperCase()}</div>`
+    : `<div class="msg-avatar ai-avatar"><i class="bi bi-robot"></i></div>`;
+
+  // Convert markdown-style bold to HTML
+  const formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+  row.innerHTML = `
+    ${avatarHtml}
+    <div>
+      <div class="msg-bubble">${formatted}</div>
+      <div class="msg-time">${formatTime(new Date())}</div>
+    </div>`;
+
+  chatBox.appendChild(row);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return row;
+}
+
+function showTyping() {
+  const chatBox = document.getElementById('chatMessages');
+  const row = document.createElement('div');
+  row.className = 'msg-row ai-row';
+  row.id = 'typingIndicator';
+  row.innerHTML = `
+    <div class="msg-avatar ai-avatar"><i class="bi bi-robot"></i></div>
+    <div>
+      <div class="msg-bubble">
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
+      </div>
+    </div>`;
+  chatBox.appendChild(row);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function hideTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+async function sendMessage(msg) {
+  if (!msg || !msg.trim()) return;
+  appendMessage(msg, true);
+  showTyping();
+
+  const btn = document.getElementById('chatBtn');
+  btn.disabled = true;
+
+  try {
+    const response = await Auth.apiCall('/api/chat/message', {
+      method: 'POST',
+      body: JSON.stringify({ message: msg })
+    });
+    hideTyping();
+    const reply = response?.aiResponse || response?.message || 'I had trouble understanding that. Could you rephrase?';
+    appendMessage(reply, false);
+  } catch(err) {
+    hideTyping();
+    appendMessage("I'm having trouble connecting right now. Please try again.", false);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('chatForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  input.value = '';
+  await sendMessage(msg);
+});
+
+function sendQuick(text) {
+  document.getElementById('chatInput').value = text;
+  document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+}
+
+function clearChat() {
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="msg-row ai-row">
+      <div class="msg-avatar ai-avatar"><i class="bi bi-robot"></i></div>
+      <div>
+        <div class="msg-bubble">Chat cleared! How can I help you next?</div>
+        <div class="msg-time">${formatTime(new Date())}</div>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
