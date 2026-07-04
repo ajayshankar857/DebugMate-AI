@@ -28,6 +28,6 @@ app:
     # 256-bit strong base64 encoded JWT secret key
     secret: ${JWT_SECRET:dGhpc2lzYWJlYXV0aWZ1bHN0cm9uZ3NlY3JldGtleWZvcmRlYnVnbWF0ZWFpcHJvamVjdGFzc2Vzc21lbnQ=}
     expirationMs: 86400000 # 24 Hours
-  gemini:
-    apiKey: ${GEMINI_API_KEY:}
-    model: gemini-1.5-flash-8b
+  groq:
+    apiKey: ${GROQ_API_KEY:}
+    model: llama-3.3-70b-versatile

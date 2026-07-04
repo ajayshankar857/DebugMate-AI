@@ -16,14 +16,14 @@ import java.util.Map;
 @Slf4j
 public class GeminiLlmClient {
 
-    @Value("${app.gemini.apiKey:}")
+    @Value("${app.groq.apiKey:}")
     private String apiKey;
 
-    @Value("${app.gemini.model:gemini-1.5-flash}")
+    @Value("${app.groq.model:llama-3.3-70b-versatile}")
     private String model;
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s";
+    private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank();
@@ -34,24 +34,21 @@ public class GeminiLlmClient {
             throw new IllegalStateException("LLM is not configured (missing API key).");
         }
 
-        String url = String.format(GEMINI_URL, model, apiKey);
-
         Map<String, Object> requestBody = Map.of(
-            "contents", List.of(Map.of(
-                "parts", List.of(Map.of("text", prompt))
-            )),
-            "generationConfig", Map.of(
-                "temperature", 0.3,
-                "maxOutputTokens", 4096
-            )
+            "model", model,
+            "messages", List.of(Map.of(
+                "role", "user",
+                "content", prompt
+            ))
         );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
-        log.info("Executing LLM Request to Gemini [{}]", model);
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+        log.info("Executing LLM Request to Groq [{}]", model);
+        ResponseEntity<String> response = restTemplate.postForEntity(GROQ_URL, request, String.class);
         return response.getBody();
     }
 }

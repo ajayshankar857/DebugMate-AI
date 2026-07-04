@@ -58,15 +58,14 @@ public class DebugAgent {
 
     public String chat(String userMessage) {
         if (!llmClient.isConfigured()) {
-            return "Simulation Mode: I see you are asking about '" + userMessage + "'. As your mentor, I'd suggest reviewing the core principles of software engineering. (Enable Gemini API for live responses).";
+            return "Simulation Mode: I see you are asking about '" + userMessage + "'. As your mentor, I'd suggest reviewing the core principles of software engineering. (Enable Groq API for live responses).";
         }
         try {
             String prompt = "You are DebugMate AI, a senior software engineer mentor. Respond briefly and concisely to this developer query: " + userMessage;
             String rawJson = llmClient.generate(prompt);
             JsonNode root = objectMapper.readTree(rawJson);
-            return root.path("candidates").get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
+            return root.path("choices").get(0)
+                    .path("message").path("content").asText();
         } catch (Exception e) {
             log.error("Chat Agent failed: {}", e.getMessage());
             return "I'm having trouble connecting to my knowledge base right now.";
@@ -123,9 +122,8 @@ public class DebugAgent {
 
     private DebugResponseDto parseResponse(String rawResponse) throws Exception {
         JsonNode root = objectMapper.readTree(rawResponse);
-        String text = root.path("candidates").get(0)
-                .path("content").path("parts").get(0)
-                .path("text").asText();
+        String text = root.path("choices").get(0)
+                .path("message").path("content").asText();
 
         // Strip any accidental markdown fences
         text = text.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
