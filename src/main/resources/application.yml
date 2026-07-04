@@ -29,5 +29,5 @@ app:
     secret: ${JWT_SECRET:dGhpc2lzYWJlYXV0aWZ1bHN0cm9uZ3NlY3JldGtleWZvcmRlYnVnbWF0ZWFpcHJvamVjdGFzc2Vzc21lbnQ=}
     expirationMs: 86400000 # 24 Hours
   gemini:
-    apiKey: ${GEMINI_API_KEY:AIzaSyBqFHKZtcF4LWOXDDvuSlbtTJvtsqpTsY4}
-    model: gemini-flash-latest
+    apiKey: ${GEMINI_API_KEY:}
+    model: gemini-1.5-flash-8b
